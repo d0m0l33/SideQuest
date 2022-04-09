@@ -1,2 +1,2 @@
-export const COVALENT_KEY = "your key";
-export const ETH_MAINNET_KEY = "your key";
+export const COVALENT_KEY = "";
+export const ETH_MAINNET_KEY = "";
