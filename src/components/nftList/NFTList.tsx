@@ -1,10 +1,13 @@
 import { formatUnits } from '@ethersproject/units'
-import React, { useEffect, useState } from 'react'
+import {useEthers} from '@usedapp/core'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Row,Spinner } from 'react-bootstrap'
 import styled from 'styled-components'
 import { Colors } from '../../global/styles'
 import { TextBold } from '../../global/typography'
 import { NFTSVGIcon } from './NFTSVGIcon'
+import soulMint from '../../artifacts/contracts/SoulMint.sol/SoulMint.json'
+import { ethers } from 'ethers'
 
 const TEST_NFTS = [
   {
@@ -38,6 +41,20 @@ const TEST_NFTS = [
 
 export function NFTList() {
   const [nfts, setNfts] =  useState(TEST_NFTS);
+  const { chainId, account, library } = useEthers();
+  useEffect(() => {
+    ;(async () => {
+      const contract = new ethers.Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', soulMint.abi, library);
+      const balanceOfAccount = await contract.balanceOf(account);
+
+      for (let i = 0; i <= balanceOfAccount - 1; i++) {
+        const tokenId = await contract.tokenOfOwnerByIndex(account, i);
+        console.log({tokenId: tokenId.toString()})
+      }
+
+
+    })()
+  }, [library, chainId, account])
 
   useEffect(() => {
     // nfts changed
