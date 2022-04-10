@@ -1,23 +1,71 @@
 import { useEthers } from '@usedapp/core'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { LeaderboardList } from '../components/leaderBoardList/LeaderBoardList';
 import { NFTList } from '../components/nftList/NFTList';
-import { Shadows } from '../global/styles';
+import { BorderRad, Colors, Shadows } from '../global/styles';
+import { Web3Storage } from 'web3.storage'
+import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
+import { Button } from 'react-bootstrap';
+
 
 export function DashBoardPage() {
-  const { chainId, account, library } = useEthers();
+const { chainId, account } = useEthers();
+const [selectedFile, setSelectedFile] = useState();
 
-  useEffect(() => {
-    // account ORR chainID changed
-  }, [account,chainId])
+    useEffect(() => {
+        // account ORR chainID changed
+    }, [account,chainId])
+
+
+    const changeHandler = (event:any) => {
+        setSelectedFile(event.target.files[0]);
+    };
+
+  const handleUpload = async (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    e.preventDefault();
+
+    // Construct with token and endpoint
+    const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
+    const fileInput: any = document.querySelector('input[type="file"]');
+    if(!fileInput){
+        console.error('No files selected');
+        return;
+    }
+
+    // Pack files into a CAR and send to web3.storage
+    const rootCid = await client.put(fileInput.files) // Promise<CIDString>
+
+    // Get info on the Filecoin deals that the CID is stored in
+    const info = await client.status(rootCid) // Promise<Status | undefined>
+
+    // Fetch and verify files from web3.storage
+    const res = await client.get(rootCid) // Promise<Web3Response | null>
+
+    if(!res){
+        console.error('Error fetching and verifying files stored in web3.storage.');
+        return;
+    }
+    const files = await res.files() // Promise<Web3File[]>
+    for (const file of files) {
+    // can then pass the cid to an nft contract
+    console.log(`${file.cid} ${file.name} ${file.size}`)
+    }
+  };
 
   return (
     <div>
         { account ? (<DashboardContainer>
     <Section>
-        <button onClick={(e) => handleUpload(e)}>upload </button>
-    </Section>
+        <UploadSection>
+        <UploadActionInput type="file" name="file" onChange={changeHandler} />
+        <div>
+            <UploadActionButton onClick={handleUpload}>upload</UploadActionButton>
+        </div>
+        </UploadSection>
+     </Section>
     <Section>
         <BoardPrimary>
             <NFTBoard></NFTBoard>
@@ -30,7 +78,7 @@ export function DashBoardPage() {
     (<DashboardContainer>
 
 <Section>
-<Text>Connect for Dashboard...</Text>
+<Text>Connect to view Dashboard</Text>
 </Section>
     </DashboardContainer>)
   }
@@ -38,41 +86,20 @@ export function DashBoardPage() {
   )
 }
 
-const handleUpload = async (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
-    e.preventDefault();
-
-
-    const blob = new Blob([`Test string`], { type: "text/plain" });
-    const file = new File([blob], "welcome.txt", {
-      type: "text/plain",
-      lastModified: new Date().getTime(),
-    });
-
-    // const { id, cid } = await storage.store(file);
-    // setLastStorageId(id);
-    // console.log('id : ',id);
-    // console.log('cid : ',cid);
-  };
-
 const LeaderBoard = ()=> {
     return (
         <div>
             <div style={{margin:'0.5em', color:'white'}}>
             <Text>Leader Board</Text>
-
             </div>
             <LeaderboardList/>
         </div>
     )
 }
 
-
 const NFTBoard = ()=> {
     return (
         <div>
-            {/* <Text>Proof of Contributions</Text> */}
             <NFTList />
         </div>
     )
@@ -114,6 +141,28 @@ export const BoardSecondary = styled(SubSection)`
     flex-direction: column;
     box-shadow: ${Shadows.main};
     background-color: #1DA1F2;
+`
+
+export const UploadSection = styled(SubSection)`
+    display:flex;
+    flex-direction: column;
+    box-shadow: ${Shadows.main};
+    background-color: #aliceblue;
+`
+
+export const UploadActionButton = styled(Button)`
+  margin: 0.5em;
+  background-color:#1DA1F2;
+  border-color:#1DA1F2;
+`
+
+export const UploadActionInput = styled.input`
+  margin: 0.5em;
+  color: ${Colors.Black[900]};
+  border: 1px solid ${Colors.Black[900]};
+  border-radius: ${BorderRad.m};
+  background-color: transparent;
+
 `
 
 

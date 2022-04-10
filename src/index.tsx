@@ -15,11 +15,9 @@ const config:Config = {
 
 ReactDOM.render(
   <React.StrictMode>
-    {/* <Provider store={store}> */}
     <DAppProvider config={config}>
       <App />
     </DAppProvider>
-    {/* </Provider>, */}
   </React.StrictMode>,
   document.getElementById('root')
 )

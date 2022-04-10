@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { BorderRad } from '../../global/styles'
 
 export function NFTIcon({ src, alt }: { src: string; alt: string }) {
   const [isIconError, setIconError] = useState(false)

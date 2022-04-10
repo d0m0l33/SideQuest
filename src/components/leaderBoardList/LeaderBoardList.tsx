@@ -6,9 +6,6 @@ import styled from 'styled-components'
 import { Colors } from '../../global/styles'
 import { TextBold, Text} from '../../global/typography'
 
-
-declare const window: any;
-
 const TEST_USERS = [
   {
     address : '0xdana.eth',
@@ -98,29 +95,21 @@ const TEST_USERS = [
 ]
 
 export function LeaderboardList() {
-
-  const { chainId, account, library } = useEthers();
-  const leaders: any[]| undefined = useState(TEST_USERS);
-
-
+  const [leaders, setLeaders] = useState(TEST_USERS);
 
   useEffect(() => {
-    // account ORR chainID changed
+    // leaders changed
   }, [leaders])
-
-  console.log('leaders : ',leaders)
-
   return (
     <div style={{height: '400px', overflow: 'scroll'}}>
-
-      {!leaders[0] ? (<Spinner animation="grow" /> ): (
+      {!leaders? (<Spinner animation="grow" /> ): (
         <LeaderBoardListContainer>
-        {leaders[0] && leaders[0].map((leader: any, idx:number) => {
+        {leaders && leaders.map((leader: any, idx:number) => {
               return (
          
                   <LeaderItem key={`SubSection-${idx}`}> 
-                        {leader.address && <TokenName>{idx+1}</TokenName>} 
-                        {leader.address && <TokenName>{leader.address}</TokenName>} 
+                        {leader.address && <LeaderAttribute>{idx+1}</LeaderAttribute>} 
+                        {leader.address && <LeaderAttribute>{leader.address}</LeaderAttribute>} 
                         {leader.count && <LeaderScore>{leader.count}</LeaderScore>}                    
                    
                   </LeaderItem>
@@ -161,10 +150,6 @@ export const Button = styled.button`
   }
 `
 
-const MintButton = styled(Button)`
-  background-color: ${Colors.Yellow[100]};
-`
-
 const LeaderItem = styled.li`
   display: flex;
   border: 1px solid #ebebeb;
@@ -173,27 +158,7 @@ const LeaderItem = styled.li`
   margin:0.5em;
 `
 
-const TokenIconContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  width: 120px;
-  height:120px;
-  margin: 0.2em;
-  border: 1px solid #ebebeb};
-  background: rgb(60, 60, 60);
-  background: rgba(149, 149, 149, 0.4);
-  position: relative;
-
-  &:hover,
-  &:focus, 
-  &:active {
-    color: ${Colors.Yellow[100]};
-    border-width: medium;
-    border-color: ${Colors.Yellow[100]};
-  }
-`
-
-const TokenName = styled(Text)`
+const LeaderAttribute = styled(Text)`
 margin: 0.4em;
 font-size: 12px;
 `
@@ -202,33 +167,3 @@ const LeaderScore = styled(TextBold)`
   margin: 0.4em;
   font-size: 12px;
 `
-
-const TokenTicker = styled(TextBold)`
-  grid-area: ticker;
-  color: ${Colors.Gray[600]};
-`
-
-const TokenBalance = styled(TextBold)`
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  padding:0.25em;
-  font-size: 12px;
-`
-
-const BadgeApplied = styled(TextBold)`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  padding:0.25em;
-  font-size: 12px;
-`
-
-const BadgeCreatorLogo = styled(TextBold)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding:0.25em;
-  font-size: 12px;
-`
-
