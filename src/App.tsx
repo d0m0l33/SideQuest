@@ -8,6 +8,7 @@ import { Route } from 'react-router'
 import { Page } from './components/base/base';
 import { TopBar } from './components/TopBar';
 import { DashBoardPage } from './pages/Dashboard';
+import { NotificationsList } from './components/transactions/History';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
       <Route path="*" element={<DashBoardPage />}/>    
     </Routes>
   </BrowserRouter>
+  <NotificationsList />
 </Page>
   );
 }

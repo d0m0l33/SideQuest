@@ -1,4 +1,4 @@
-import { useEthers } from '@usedapp/core'
+import { useContractFunction, useEthers } from '@usedapp/core'
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { LeaderboardList } from '../components/leaderBoardList/LeaderBoardList';
@@ -7,16 +7,35 @@ import { BorderRad, Colors, Shadows } from '../global/styles';
 import { Web3Storage } from 'web3.storage'
 import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
 import { Button } from 'react-bootstrap';
+import { Contract } from '@ethersproject/contracts'
+import soulMint from '../artifacts/contracts/SoulMint.sol/SoulMint.json'
+import { ethers } from 'ethers'
+import { Spinner } from 'react-bootstrap'
 
+
+export const SouleMintAbi = [
+    "function mintOne(uint256 eventId, address to) public",
+  ];
 
 export function DashBoardPage() {
-const { chainId, account } = useEthers();
+const { chainId, account, library } = useEthers();
 const [selectedFile, setSelectedFile] = useState();
+const [currentIpfsLinks, setCurrentIpfsLinks] = useState<string[]>([]);
+const [isUploading, setIsUploading] = useState<boolean>(false);
+
+const signer = library?.getSigner();
+
+let contract: Contract|null = null;
+const souleMintInterface = new ethers.utils.Interface(SouleMintAbi);
+contract =  new Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', souleMintInterface, signer);
 
     useEffect(() => {
+        ;(async () => {
+          })()
         // account ORR chainID changed
     }, [account,chainId])
 
+    const sendObj = useContractFunction(contract, 'mintOne', { transactionName: 'Mint' });
 
     const changeHandler = (event:any) => {
         setSelectedFile(event.target.files[0]);
@@ -26,6 +45,8 @@ const [selectedFile, setSelectedFile] = useState();
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ) => {
     e.preventDefault();
+
+    setIsUploading(true);
 
     // Construct with token and endpoint
     const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
@@ -49,11 +70,35 @@ const [selectedFile, setSelectedFile] = useState();
         return;
     }
     const files = await res.files() // Promise<Web3File[]>
+    const links: string[] = [];
     for (const file of files) {
-    // can then pass the cid to an nft contract
-    console.log(`${file.cid} ${file.name} ${file.size}`)
+        // can then pass the cid to an nft contract
+        console.log(`${file.cid} ${file.name} ${file.size}`);
+        if(file.cid && file.name){
+            const link = generateIpfsLink(file.cid, file.name);
+            links.push(link);
+        }
     }
+
+    setCurrentIpfsLinks(links);
+    setIsUploading(false);
+
   };
+
+  const handleMint = async (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    e.preventDefault();
+    if(!signer){
+        return;
+    }
+     const eventId = Math.random() % 100000;
+     sendObj.send(ethers.utils.parseEther(eventId.toString()),account);
+  };
+
+  const generateIpfsLink =(cid: string, filename: string): string => {
+    return`https://ipfs.io/ipfs/${cid}/${filename}`;
+  }
 
   return (
     <div>
@@ -63,8 +108,23 @@ const [selectedFile, setSelectedFile] = useState();
         <UploadActionInput type="file" name="file" onChange={changeHandler} />
         <div>
             <UploadActionButton onClick={handleUpload}>upload</UploadActionButton>
+            <UploadActionButton onClick={handleMint}>mint</UploadActionButton>
+
         </div>
         </UploadSection>
+        {isUploading &&  <Spinner animation="grow" /> }
+        {(currentIpfsLinks && currentIpfsLinks.length > 0) && <UrlLinkSection>
+            <UrlLink>
+            <Text>
+                <a 
+                href={currentIpfsLinks[0]} target="_blank" rel="noopener noreferrer">
+{currentIpfsLinks[0]
+}                
+</a>
+                
+            </Text>
+            </UrlLink>
+        </UrlLinkSection>}
      </Section>
     <Section>
         <BoardPrimary>
@@ -150,6 +210,20 @@ export const UploadSection = styled(SubSection)`
     background-color: #aliceblue;
 `
 
+export const UrlLinkSection = styled(SubSection)`
+    display:flex;
+    flex-direction: column;
+    box-shadow: ${Shadows.main};
+    background-color: #aliceblue;
+    justify-content:center;
+    max-width: 300px;
+    overflow: scroll;
+`
+
+export const UrlLink = styled.div`
+    margin: 1em;
+
+`
 export const UploadActionButton = styled(Button)`
   margin: 0.5em;
   background-color:#1DA1F2;

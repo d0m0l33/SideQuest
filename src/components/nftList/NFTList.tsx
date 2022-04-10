@@ -8,6 +8,8 @@ import { TextBold } from '../../global/typography'
 import { NFTSVGIcon } from './NFTSVGIcon'
 import soulMint from '../../artifacts/contracts/SoulMint.sol/SoulMint.json'
 import { ethers } from 'ethers'
+import { Contract } from '@ethersproject/contracts'
+
 
 const TEST_NFTS = [
   {
@@ -42,15 +44,25 @@ const TEST_NFTS = [
 export function NFTList() {
   const [nfts, setNfts] =  useState(TEST_NFTS);
   const { chainId, account, library } = useEthers();
+  let contract: Contract|null = null;
   useEffect(() => {
     ;(async () => {
+      // if(library && account){
+      //   const souleMintInterface = new ethers.utils.Interface(soulMint.abi)
+      //   contract =  new Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', souleMintInterface, library);
+      //   const balanceOfAccount = await contract.balanceOf(account);
+      //   console.log('balanceOfAccount : ',balanceOfAccount)
+      // }
       const contract = new ethers.Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', soulMint.abi, library);
       const balanceOfAccount = await contract.balanceOf(account);
-
+      console.log('balanceOfAccount : ',balanceOfAccount)
       for (let i = 0; i <= balanceOfAccount - 1; i++) {
         const tokenId = await contract.tokenOfOwnerByIndex(account, i);
         console.log({tokenId: tokenId.toString()})
       }
+
+
+
 
 
     })()
