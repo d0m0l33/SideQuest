@@ -7,9 +7,13 @@ import { Colors } from '../../global/styles'
 import { TextBold } from '../../global/typography'
 import { NFTSVGIcon } from './NFTSVGIcon'
 import soulMint from '../../artifacts/contracts/SoulMint.sol/SoulMint.json'
+import soulMintFactory from '../../artifacts/contracts/SoulMintFactory.sol/SoulMintFactory.json'
 import { ethers } from 'ethers'
 import { Contract } from '@ethersproject/contracts'
 
+import BigNumber from 'bignumber.js'
+import axios from 'axios'
+import {COVALENT_KEY} from '../../global/apiKeys'
 
 const TEST_NFTS = [
   {
@@ -47,24 +51,19 @@ export function NFTList() {
   let contract: Contract|null = null;
   useEffect(() => {
     ;(async () => {
-      // if(library && account){
-      //   const souleMintInterface = new ethers.utils.Interface(soulMint.abi)
-      //   contract =  new Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', souleMintInterface, library);
-      //   const balanceOfAccount = await contract.balanceOf(account);
-      //   console.log('balanceOfAccount : ',balanceOfAccount)
-      // }
-      const contract = new ethers.Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', soulMint.abi, library);
-      const balanceOfAccount = await contract.balanceOf(account);
-      console.log('balanceOfAccount : ',balanceOfAccount)
-      for (let i = 0; i <= balanceOfAccount - 1; i++) {
-        const tokenId = await contract.tokenOfOwnerByIndex(account, i);
-        console.log({tokenId: tokenId.toString()})
-      }
+      const factoryContract = new ethers.Contract('0x756743910ceA0998F23D57181b9d3512450CadF4', soulMintFactory.abi, library);
+      const soulMintContractAddress = await factoryContract.contractByOwner(account);
+      const contract = new ethers.Contract(soulMintContractAddress, soulMint.abi, library);
+      const xpoapAddress = await contract.getXpoapAddress();
 
-
-
-
-
+      const allNfts = await axios.get(`https://api.covalenthq.com/v1/${chainId}/tokens/${xpoapAddress}/nft_token_ids/?key=${COVALENT_KEY}`)
+      setNfts(allNfts.data.data.items.map((nft: any) => ({
+          id: nft.token_id,
+          index: new BigNumber(nft.token_id).plus(50).toString(),
+          name: 'Quest DAO',
+          type : 'Dao Contribution',
+        }
+      )))
     })()
   }, [library, chainId, account])
 

@@ -1,12 +1,12 @@
 const hre = require("hardhat");
 
 async function main() {
-  const SoulMint = await hre.ethers.getContractFactory("SoulMint");
-  const soulMint = await SoulMint.deploy();
+  const SoulMintFactory = await hre.ethers.getContractFactory("SoulMintFactory");
+  const soulMintFactory = await SoulMintFactory.deploy();
 
-  await soulMint.deployed();
+  await soulMintFactory.deployed();
 
-  console.log("SoulMint deployed to:", soulMint.address);
+  console.log("SoulMintFactory deployed to:", soulMintFactory.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

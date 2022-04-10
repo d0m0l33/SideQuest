@@ -25,12 +25,12 @@ module.exports = {
     }
   },
  solidity: {
-    compilers: [
-      {"version": "0.4.24"},
-      {"version": "0.5.0"},
-      {"version": "0.6.0"},
-      {"version": "0.7.0"},
-      {"version": "0.8.1"},
-    ]
+    version: "0.5.0",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 2000
+      }
+    },
  }
 };
