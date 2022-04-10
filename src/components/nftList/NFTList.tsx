@@ -7,6 +7,7 @@ import { Colors } from '../../global/styles'
 import { TextBold } from '../../global/typography'
 import { NFTSVGIcon } from './NFTSVGIcon'
 import soulMint from '../../artifacts/contracts/SoulMint.sol/SoulMint.json'
+import soulMintFactory from '../../artifacts/contracts/SoulMintFactory.sol/SoulMintFactory.json'
 import { ethers } from 'ethers'
 import BigNumber from 'bignumber.js'
 import axios from 'axios'
@@ -47,9 +48,9 @@ export function NFTList() {
   const { chainId, account, library } = useEthers();
   useEffect(() => {
     ;(async () => {
-      // SoulMint contract instance from deployInstanceAndMintThree, run npx hardhat run `scripts/deployInstanceAndMintThree.js --network mumbai` and use yours
-      // TODO: use SoulMintFactory and get SoulMint address from factory, then use the methods directly from the instance
-      const contract = new ethers.Contract('0x4445A92f0ea160046a6Cf99FBBE902FA9fcAF9b4', soulMint.abi, library);
+      const factoryContract = new ethers.Contract('0x756743910ceA0998F23D57181b9d3512450CadF4', soulMintFactory.abi, library);
+      const soulMintContractAddress = await factoryContract.contractByOwner(account);
+      const contract = new ethers.Contract(soulMintContractAddress, soulMint.abi, library);
       const xpoapAddress = await contract.getXpoapAddress();
 
       const allNfts = await axios.get(`https://api.covalenthq.com/v1/${chainId}/tokens/${xpoapAddress}/nft_token_ids/?key=${COVALENT_KEY}`)

@@ -35,8 +35,11 @@ contract SoulMint is Ownable {
     return xpoap.balanceOf(_owner);
   }
 
-  function metadataUrl() public pure returns (string memory) {
-    // TODO: Implement when we know how to construct the URL
-    return "foo";
+  function setBaseURI(string memory baseURI) public {
+    xpoap.setBaseURI(baseURI);
+  }
+
+  function tokenURI(uint256 tokenId) external view returns (string memory) {
+    return xpoap.tokenURI(tokenId);
   }
 }
