@@ -48,7 +48,6 @@ const TEST_NFTS = [
 export function NFTList() {
   const [nfts, setNfts] =  useState(TEST_NFTS);
   const { chainId, account, library } = useEthers();
-  let contract: Contract|null = null;
   useEffect(() => {
     ;(async () => {
       const factoryContract = new ethers.Contract('0x756743910ceA0998F23D57181b9d3512450CadF4', soulMintFactory.abi, library);

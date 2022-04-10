@@ -8,34 +8,37 @@ import { Web3Storage } from 'web3.storage'
 import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
 import { Button } from 'react-bootstrap';
 import { Contract } from '@ethersproject/contracts'
+import soulMintFactory from '../artifacts/contracts/SoulMintFactory.sol/SoulMintFactory.json'
 import soulMint from '../artifacts/contracts/SoulMint.sol/SoulMint.json'
 import { ethers } from 'ethers'
 import { Spinner } from 'react-bootstrap'
+import {TypedContract} from '@usedapp/core/dist/esm/src/model/types';
 
-
-export const SouleMintAbi = [
-    "function mintOne(uint256 eventId, address to) public",
-  ];
 
 export function DashBoardPage() {
 const { chainId, account, library } = useEthers();
 const [selectedFile, setSelectedFile] = useState();
 const [currentIpfsLinks, setCurrentIpfsLinks] = useState<string[]>([]);
 const [isUploading, setIsUploading] = useState<boolean>(false);
+const [contract, setContract] = useState<Contract | null>(null)
 
 const signer = library?.getSigner();
 
-let contract: Contract|null = null;
-const souleMintInterface = new ethers.utils.Interface(SouleMintAbi);
-contract = new Contract('0xf46bB4381BECf28CB0ebf7D6a5127bD04810d0cE', souleMintInterface, signer);
 
-    useEffect(() => {
-        ;(async () => {
-          })()
-        // account ORR chainID changed
-    }, [account,chainId])
+useEffect(() => {
+  ;(async () => {
+    const factoryContract = new ethers.Contract('0x756743910ceA0998F23D57181b9d3512450CadF4', soulMintFactory.abi, signer);
+    const soulMintContractAddress = await factoryContract.contractByOwner(account);
+    if (soulMintContractAddress === '0x0000000000000000000000000000000000000000') {
+      await factoryContract.deployOne("Test", "TST", "http://foo.bar/");
+    }
+    const contract = new ethers.Contract(soulMintContractAddress, soulMint.abi, signer);
+    setContract(contract)
+  })()
+  // account ORR chainID changed
+}, [account,chainId])
 
-    const sendObj = useContractFunction(contract, 'mintOne', { transactionName: 'Mint' });
+    const sendObj = useContractFunction(contract as TypedContract, 'mintOne', { transactionName: 'Mint' });
 
     const changeHandler = (event:any) => {
         setSelectedFile(event.target.files[0]);
