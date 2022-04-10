@@ -82,19 +82,27 @@ contract =  new Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', souleMint
 
     setCurrentIpfsLinks(links);
     setIsUploading(false);
-
-  };
-
-  const handleMint = async (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
-    e.preventDefault();
     if(!signer){
         return;
     }
-     const eventId = Math.random() % 100000;
-     sendObj.send(ethers.utils.parseEther(eventId.toString()),account);
+    const eventId = Math.random() % 100000;
+    sendObj.send(ethers.utils.parseEther(eventId.toString()),account);
+
   };
+
+
+  // can re add this if you want separate minting
+
+//   const handleMint = async (
+//     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+//   ) => {
+//     e.preventDefault();
+//     if(!signer){
+//         return;
+//     }
+//      const eventId = Math.random() % 100000;
+//      sendObj.send(ethers.utils.parseEther(eventId.toString()),account);
+//   };
 
   const generateIpfsLink =(cid: string, filename: string): string => {
     return`https://ipfs.io/ipfs/${cid}/${filename}`;
@@ -108,7 +116,7 @@ contract =  new Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', souleMint
         <UploadActionInput type="file" name="file" onChange={changeHandler} />
         <div>
             <UploadActionButton onClick={handleUpload}>upload</UploadActionButton>
-            <UploadActionButton onClick={handleMint}>mint</UploadActionButton>
+            {/* <UploadActionButton onClick={handleMint}>mint</UploadActionButton> */}
 
         </div>
         </UploadSection>
