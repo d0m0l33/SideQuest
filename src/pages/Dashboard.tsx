@@ -105,7 +105,7 @@ contract = new Contract('0xf46bB4381BECf28CB0ebf7D6a5127bD04810d0cE', souleMintI
 //   };
 
   const generateIpfsLink =(cid: string, filename: string): string => {
-    return`https://ipfs.io/ipfs/${cid}/${filename}`;
+    return`https://ipfs.io/ipfs/${cid}`;
   }
 
   return (
