@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useEthers, shortenAddress, useLookupAddress } from '@usedapp/core'
 import { Button } from '../base/Button'
-// import { Colors } from '../../global/styles'
 import styled from 'styled-components'
 import { Colors } from '../../global/styles'
-
-// import { AccountModal } from './AccountModal'
 
 export const AccountButton = () => {
   const { account, deactivate, activateBrowserWallet } = useEthers()
@@ -28,7 +25,6 @@ export const AccountButton = () => {
   return (
     <Account>
       {activateError && <ErrorWrapper>⚠️ {activateError}</ErrorWrapper>}
-      {/* {showModal && <AccountModal setShowModal={setShowModal} />} */}
       {account ? (
         <>
           <AccountLabel onClick={() => setShowModal(!showModal)}>{ens ?? shortenAddress(account)}</AccountLabel>
