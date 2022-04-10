@@ -7,14 +7,15 @@ contract SoulMint is Ownable {
   XPoap public xpoap;
   mapping(uint256 => uint256) public mintTimestampByTokenId;
 
-  constructor() public {
-    xpoap = new XPoap();
-    address _msgSender = msg.sender;
+  constructor(string memory __name, string memory __symbol, string memory __baseURI) public {
+    address _txOrigin = tx.origin;
     address[] memory admins = new address[](1);
-    admins[0] = _msgSender;
+    admins[0] = _txOrigin;
+
+    xpoap = new XPoap();
     // TODO: In the real-world POAP contract, this is called initialize.
     // Find out why we're getting some error and revert it to initialize, this won't be compatible with the deployed contract
-    xpoap.init("TestName", "TST", "http://foo.bar/", admins); // TODO: This is currently tied to one admin. Maybe make it a factory so that each admin deploys theirs?
+    xpoap.init(__name, __symbol, __baseURI, admins); // TODO: This is currently tied to one admin. Maybe make it a factory so that each admin deploys theirs?
   }
 
   function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
