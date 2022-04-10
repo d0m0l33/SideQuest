@@ -32,4 +32,9 @@ contract SoulMintFactory {
     SoulMint soulMint = SoulMint(contractByOwner[msg.sender]);
     return soulMint.metadataUrl();
   }
+
+  function getXpoapAddress() public view returns (XPoap xpoapAddress) {
+    SoulMint soulMint = SoulMint(contractByOwner[msg.sender]);
+    return soulMint.getXpoapAddress();
+  }
 }

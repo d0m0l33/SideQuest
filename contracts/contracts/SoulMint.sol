@@ -18,6 +18,10 @@ contract SoulMint is Ownable {
     xpoap.init(__name, __symbol, __baseURI, admins); // TODO: This is currently tied to one admin. Maybe make it a factory so that each admin deploys theirs?
   }
 
+  function getXpoapAddress() public view returns (XPoap xpoapAddress) {
+    return xpoap;
+  }
+
   function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
     return xpoap.tokenOfOwnerByIndex(owner, index);
   }
