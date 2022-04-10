@@ -27,7 +27,7 @@ const signer = library?.getSigner();
 
 let contract: Contract|null = null;
 const souleMintInterface = new ethers.utils.Interface(SouleMintAbi);
-contract =  new Contract('0x27e41857694614545c9A5580C09C529e1e7262F8', souleMintInterface, signer);
+contract = new Contract('0xf46bB4381BECf28CB0ebf7D6a5127bD04810d0cE', souleMintInterface, signer);
 
     useEffect(() => {
         ;(async () => {
