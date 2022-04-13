@@ -11,3 +11,8 @@ Gamified Coordination
 `ETH_MAINNET_KEY`. 
   mainnet : https://www.alchemy.com/ )
 
+### Intro
+Gamified Coordination     ..accomplished through..
+   - Tokenized Contributions
+   - Tokenized Collaboration
+   - Gaming Project Management UI
