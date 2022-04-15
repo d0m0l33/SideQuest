@@ -13,6 +13,7 @@ import soulMint from '../artifacts/contracts/SoulMint.sol/SoulMint.json'
 import { ethers } from 'ethers'
 import { Spinner } from 'react-bootstrap'
 import {TypedContract} from '@usedapp/core/dist/esm/src/model/types';
+import { SoulMintFactoryConfig, useSoulMintFactory } from '../customHooks/useSoulMintFactory';
 
 
 export function DashBoardPage() {
@@ -24,25 +25,40 @@ const [contract, setContract] = useState<Contract | null>(null)
 
 const signer = library?.getSigner();
 
+const [userHasMintedFactory, setMintedFactoryState] = useState<boolean>(false)
+
+
+let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory();
+
+
 
 useEffect(() => {
   ;(async () => {
-    const factoryContract = new ethers.Contract('0x756743910ceA0998F23D57181b9d3512450CadF4', soulMintFactory.abi, signer);
-    const soulMintContractAddress = await factoryContract.contractByOwner(account);
-    if (soulMintContractAddress === '0x0000000000000000000000000000000000000000') {
-      await factoryContract.deployOne("Test", "TST", "http://foo.bar/");
+    if(!contractConfig){
+        return;
     }
-    const contract = new ethers.Contract(soulMintContractAddress, soulMint.abi, signer);
-    setContract(contract)
+    setMintedFactoryState(contractConfig.hasMintedFactory);
   })()
   // account ORR chainID changed
-}, [account,chainId])
-
-    const sendObj = useContractFunction(contract as TypedContract, 'mintOne', { transactionName: 'Mint' });
-
+}, [account,chainId, contractConfig])
+    const {send} = useContractFunction(contractConfig?.contract as TypedContract, 'mintOne', { transactionName: 'Mint' });
     const changeHandler = (event:any) => {
         setSelectedFile(event.target.files[0]);
     };
+
+
+  const handleInitialFactoryMint = async ( 
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    e.preventDefault();
+    if(!contractConfig){
+        return;
+    }
+    if(!contractConfig.factoryContract){
+        return;
+    }
+    contractConfig.factoryContract.deployOne("SoulMintTest", "SMT", "http://foo.bar/");
+  }
 
   const handleUpload = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -58,6 +74,7 @@ useEffect(() => {
         console.error('No files selected');
         return;
     }
+    
 
     // Pack files into a CAR and send to web3.storage
     const rootCid = await client.put(fileInput.files) // Promise<CIDString>
@@ -76,7 +93,7 @@ useEffect(() => {
     const links: string[] = [];
     for (const file of files) {
         // can then pass the cid to an nft contract
-        console.log(`${file.cid} ${file.name} ${file.size}`);
+        // console.log(`${file.cid} ${file.name} ${file.size}`);
         if(file.cid && file.name){
             const link = generateIpfsLink(file.cid, file.name);
             links.push(link);
@@ -89,8 +106,7 @@ useEffect(() => {
         return;
     }
     const eventId = Math.random() % 100000;
-    sendObj.send(ethers.utils.parseEther(eventId.toString()),account);
-
+    send(ethers.utils.parseEther(eventId.toString()),account);
   };
 
 
@@ -118,7 +134,8 @@ useEffect(() => {
         <UploadSection>
         <UploadActionInput type="file" name="file" onChange={changeHandler} />
         <div>
-            <UploadActionButton onClick={handleUpload}>upload</UploadActionButton>
+            {contractConfig && userHasMintedFactory == false && <UploadActionButton onClick={handleInitialFactoryMint}>Mint Profile</UploadActionButton>}
+            <UploadActionButton disabled={userHasMintedFactory === false} onClick={handleUpload}>upload</UploadActionButton>
             {/* <UploadActionButton onClick={handleMint}>mint</UploadActionButton> */}
 
         </div>
@@ -239,6 +256,12 @@ export const UploadActionButton = styled(Button)`
   margin: 0.5em;
   background-color:#1DA1F2;
   border-color:#1DA1F2;
+
+  &:disabled {
+    background-color:grey;
+    border-color:grey;
+  }
+
 `
 
 export const UploadActionInput = styled.input`

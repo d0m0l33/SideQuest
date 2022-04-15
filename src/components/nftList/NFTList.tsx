@@ -1,100 +1,58 @@
 import { formatUnits } from '@ethersproject/units'
-import {useEthers} from '@usedapp/core'
-import React, { useEffect, useMemo, useState } from 'react'
-import { Row,Spinner } from 'react-bootstrap'
+import { Spinner } from 'react-bootstrap'
 import styled from 'styled-components'
 import { Colors } from '../../global/styles'
 import { TextBold } from '../../global/typography'
 import { NFTSVGIcon } from './NFTSVGIcon'
-import soulMint from '../../artifacts/contracts/SoulMint.sol/SoulMint.json'
-import soulMintFactory from '../../artifacts/contracts/SoulMintFactory.sol/SoulMintFactory.json'
-import { ethers } from 'ethers'
 import { Contract } from '@ethersproject/contracts'
 
-import BigNumber from 'bignumber.js'
-import axios from 'axios'
-import {COVALENT_KEY} from '../../global/apiKeys'
+import { useSoulMintNfts } from '../../customHooks/useSoulMintNfts'
+import { useSoulMintFactory, SoulMintFactoryConfig } from '../../customHooks/useSoulMintFactory'
 
-const TEST_NFTS = [
-  {
-    type : 'Dao Contribution',
-    id: '10',
-    index: '50',
-    name: 'Quest DAO'
-  },
-  {
-    type : 'Dao Contribution',
-    id: '11',
-    index: '51',
-    name: 'Quest DAO'
 
-  },
-  {
-    type : 'Dao Contribution',
-    id: '12',
-    index: '52',
-    name: 'Quest DAO'
-
-  },
-  {
-    type : 'Dao Contribution',
-    id: '13',
-    index: '53',
-    name: 'Quest DAO'
-
-  }
-]
+//{contract && !nfts ?  (<Spinner animation="grow" /> ):
 
 export function NFTList() {
-  const [nfts, setNfts] =  useState(TEST_NFTS);
-  const { chainId, account, library } = useEthers();
-  useEffect(() => {
-    ;(async () => {
-      const factoryContract = new ethers.Contract('0x756743910ceA0998F23D57181b9d3512450CadF4', soulMintFactory.abi, library);
-      const soulMintContractAddress = await factoryContract.contractByOwner(account);
-      const contract = new ethers.Contract(soulMintContractAddress, soulMint.abi, library);
-      const xpoapAddress = await contract.getXpoapAddress();
-
-      const allNfts = await axios.get(`https://api.covalenthq.com/v1/${chainId}/tokens/${xpoapAddress}/nft_token_ids/?key=${COVALENT_KEY}`)
-      setNfts(allNfts.data.data.items.map((nft: any) => ({
-          id: nft.token_id,
-          index: new BigNumber(nft.token_id).plus(50).toString(),
-          name: 'Quest DAO',
-          type : 'Dao Contribution',
-        }
-      )))
-    })()
-  }, [library, chainId, account])
-
-  useEffect(() => {
-    // nfts changed
-  }, [nfts])
-
+  let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory();
+  let nfts: any[]| undefined| null = useSoulMintNfts(contractConfig?.contract);
+  console.log('con : ',contractConfig)
   return (
     <div>
 
-      {!nfts ? (<Spinner animation="grow" /> ): (
+      {!contractConfig || !contractConfig.contract ?  (<div>No contributions at the moment.<br></br>Upload content and tokenize your contributions!</div> ): (
         <NFTContainer>
-        {nfts && nfts.map((nft: any, idx:number) => {
-              return (
-         
-                    <NFTItem key={`SubSection-${idx}`}> 
-                    <NFTIconContainer>
-                      <NFTDomainName>
-                        Quest Dao
-                      </NFTDomainName>
-                      <NFTSVGIcon src={''} alt={''}></NFTSVGIcon>
-                      <NFTContributionPoints> 
-                        {formatUnits(10,0)}xp
-                      </NFTContributionPoints>
-                    </NFTIconContainer>
-                        {nft.type && <NFTType>{nft.type}</NFTType>}                    
-                  </NFTItem>
-           
-          )})}
+        {!nfts ? (<Spinner animation="grow" />) : (
+       <NftContent nfts={nfts}></NftContent>
+        ) }
+
         </NFTContainer>
     )}
     </div>
+  )
+}
+
+
+const NftContent = ({ nfts }: { nfts: any[]; })=>{
+  return (
+    <>
+    { nfts && nfts.length === 0 && <div>No contributions at the moment.<br></br>Upload content and tokenize your contributions!</div>}
+    {nfts.map((nft: any, idx:number) => {
+      return (
+            <NFTItem key={`SubSection-${idx}`}> 
+            <NFTIconContainer>
+              <NFTDomainName>
+                Quest Dao
+              </NFTDomainName>
+              <NFTSVGIcon src={''} alt={''}></NFTSVGIcon>
+              <NFTContributionPoints> 
+                {formatUnits(10,0)}xp
+              </NFTContributionPoints>
+            </NFTIconContainer>
+                {nft.type && <NFTType>{nft.type}</NFTType>}                    
+          </NFTItem>
+  )})}
+</>
+
   )
 }
 
