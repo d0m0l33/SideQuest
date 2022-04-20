@@ -1,6 +1,6 @@
 import  { AxiosResponse } from 'axios'
 import { useEffect, useState } from 'react'
-import { ChainId, useEthers } from '@usedapp/core'
+import { ChainId, useEthers, useNotifications } from '@usedapp/core'
 import { getTokenIdsFor } from '../api/nftApi';
 import { Contract } from '@ethersproject/contracts'
 import BigNumber from 'bignumber.js';
@@ -10,10 +10,11 @@ import BigNumber from 'bignumber.js';
 export function useSoulMintNfts(contract:Contract|null|undefined, overrideChainId?: ChainId, tags?: string[]) {
 
   const { account, chainId, library } = useEthers();
+  const { notifications } = useNotifications()
+
   const adjustedChainId = chainId === 31337 ? ChainId.Mainnet : chainId;
   // soul mint contract calls external xpoap address
   // so logs that will be indexed in the future are assosciated with this contract address
-  // const xpoapAddress = await contract.getXpoapAddress();
   const [nfts, setNfts] = useState<any[]>()
   useEffect(() => {
     if(!contract){
@@ -51,7 +52,7 @@ export function useSoulMintNfts(contract:Contract|null|undefined, overrideChainI
         setNfts(undefined)
       })
     }
-  }, [account,chainId, contract])
+  }, [account,chainId, contract, notifications])
   return nfts
 }
 

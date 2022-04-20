@@ -8,8 +8,6 @@ import { Web3Storage } from 'web3.storage'
 import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
 import { Button } from 'react-bootstrap';
 import { Contract } from '@ethersproject/contracts'
-import soulMintFactory from '../artifacts/contracts/SoulMintFactory.sol/SoulMintFactory.json'
-import soulMint from '../artifacts/contracts/SoulMint.sol/SoulMint.json'
 import { ethers } from 'ethers'
 import { Spinner } from 'react-bootstrap'
 import {TypedContract} from '@usedapp/core/dist/esm/src/model/types';
@@ -35,13 +33,16 @@ let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory(
 useEffect(() => {
   ;(async () => {
     if(!contractConfig){
-        return;
+        setMintedFactoryState(false);
+    } else {
+        setMintedFactoryState(contractConfig.hasMintedFactory);
     }
-    setMintedFactoryState(contractConfig.hasMintedFactory);
   })()
   // account ORR chainID changed
 }, [account,chainId, contractConfig])
-    const {send} = useContractFunction(contractConfig?.contract as TypedContract, 'mintOne', { transactionName: 'Mint' });
+    const mintOne = useContractFunction(contractConfig?.contract as TypedContract, 'mintOne', { transactionName: 'Mint' });
+    const deploySoulMint = useContractFunction(contractConfig?.factoryContract as TypedContract, 'deployOne', { transactionName: 'CreateProfile' });
+
     const changeHandler = (event:any) => {
         setSelectedFile(event.target.files[0]);
     };
@@ -57,23 +58,21 @@ useEffect(() => {
     if(!contractConfig.factoryContract){
         return;
     }
-    contractConfig.factoryContract.deployOne("SoulMintTest", "SMT", "http://foo.bar/");
+    deploySoulMint.send("SoulMintTest", "SMT", "http://foo.bar/");
   }
 
   const handleUpload = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ) => {
     e.preventDefault();
-
-    setIsUploading(true);
-
-    // Construct with token and endpoint
-    const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
     const fileInput: any = document.querySelector('input[type="file"]');
-    if(!fileInput){
+    if(!fileInput || fileInput.files.length === 0){
         console.error('No files selected');
         return;
     }
+    setIsUploading(true);
+    // Construct with token and endpoint
+    const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
     
 
     // Pack files into a CAR and send to web3.storage
@@ -87,6 +86,7 @@ useEffect(() => {
 
     if(!res){
         console.error('Error fetching and verifying files stored in web3.storage.');
+        setIsUploading(false);
         return;
     }
     const files = await res.files() // Promise<Web3File[]>
@@ -102,26 +102,18 @@ useEffect(() => {
 
     setCurrentIpfsLinks(links);
     setIsUploading(false);
+  };
+
+  const handleMint = async (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    e.preventDefault();
     if(!signer){
         return;
     }
-    const eventId = Math.random() % 100000;
-    send(ethers.utils.parseEther(eventId.toString()),account);
-  };
-
-
-  // can re add this if you want separate minting
-
-//   const handleMint = async (
-//     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-//   ) => {
-//     e.preventDefault();
-//     if(!signer){
-//         return;
-//     }
-//      const eventId = Math.random() % 100000;
-//      sendObj.send(ethers.utils.parseEther(eventId.toString()),account);
-//   };
+     const eventId = Math.random() % 100000;
+     mintOne.send(ethers.utils.parseEther(eventId.toString()),account);
+    };
 
   const generateIpfsLink =(cid: string, filename: string): string => {
     return`https://ipfs.io/ipfs/${cid}`;
@@ -136,7 +128,6 @@ useEffect(() => {
         <div>
             {contractConfig && userHasMintedFactory == false && <UploadActionButton onClick={handleInitialFactoryMint}>Mint Profile</UploadActionButton>}
             <UploadActionButton disabled={userHasMintedFactory === false} onClick={handleUpload}>upload</UploadActionButton>
-            {/* <UploadActionButton onClick={handleMint}>mint</UploadActionButton> */}
 
         </div>
         </UploadSection>
@@ -144,14 +135,15 @@ useEffect(() => {
         {(currentIpfsLinks && currentIpfsLinks.length > 0) && <UrlLinkSection>
             <UrlLink>
             <Text>
-                <a 
-                href={currentIpfsLinks[0]} target="_blank" rel="noopener noreferrer">
-{currentIpfsLinks[0]
-}                
-</a>
+            <a 
+            href={currentIpfsLinks[0]} target="_blank" rel="noopener noreferrer">
+            View file             
+            </a>
                 
             </Text>
             </UrlLink>
+            <UploadActionButton onClick={handleMint}>mint</UploadActionButton>
+
         </UrlLinkSection>}
      </Section>
     <Section>

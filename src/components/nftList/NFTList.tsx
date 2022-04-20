@@ -15,7 +15,6 @@ import { useSoulMintFactory, SoulMintFactoryConfig } from '../../customHooks/use
 export function NFTList() {
   let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory();
   let nfts: any[]| undefined| null = useSoulMintNfts(contractConfig?.contract);
-  console.log('con : ',contractConfig)
   return (
     <div>
 
