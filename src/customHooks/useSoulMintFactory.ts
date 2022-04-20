@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 import { useEffect, useState } from 'react'
-import { ChainId, useEthers } from '@usedapp/core'
+import { useEthers, useNotifications } from '@usedapp/core'
 import { ethers } from 'ethers'
 import soulMint from '../artifacts/contracts/SoulMint.sol/SoulMint.json'
 import soulMintFactory from '../artifacts/contracts/SoulMintFactory.sol/SoulMintFactory.json'
@@ -12,10 +12,13 @@ export interface SoulMintFactoryConfig {
   factoryContract: Contract|null;
   hasMintedFactory: boolean;
 }
+export const SOUL_MINT_FACTORY_ADDRESS = "0x756743910ceA0998F23D57181b9d3512450CadF4"
 
 export function useSoulMintFactory() {
 
   const { account, chainId, library } = useEthers();
+  const { notifications } = useNotifications()
+
   const signer = library?.getSigner();
   // soul mint factory contract
   // single chain for now
@@ -24,7 +27,7 @@ export function useSoulMintFactory() {
     if(!account){
       setConfig(null)
     } else {
-        const factoryContract = new ethers.Contract('0x756743910ceA0998F23D57181b9d3512450CadF4', soulMintFactory.abi, signer);
+        const factoryContract = new ethers.Contract(SOUL_MINT_FACTORY_ADDRESS, soulMintFactory.abi, signer);
         factoryContract.contractByOwner(account).then(async (soulMintContractAddress: string) => {
             if (soulMintContractAddress === '0x0000000000000000000000000000000000000000') {
               setConfig({contract : null, hasMintedFactory: false, factoryContract: factoryContract});
@@ -38,6 +41,6 @@ export function useSoulMintFactory() {
         })
     }
 
-  }, [account,chainId])
+  }, [account,chainId,notifications])
   return config
 }
