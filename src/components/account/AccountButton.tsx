@@ -28,7 +28,7 @@ export const AccountButton = () => {
       {account ? (
         <>
           <AccountLabel onClick={() => setShowModal(!showModal)}>{ens ?? shortenAddress(account)}</AccountLabel>
-          <LoginButton onClick={() => deactivate()}>Disconnect</LoginButton>
+          <DisconnectButton onClick={() => deactivate()}>x</DisconnectButton>
         </>
       ) : (
         <LoginButton onClick={activate}>Connect</LoginButton>
@@ -50,14 +50,17 @@ const Account = styled.div`
 `
 
 const LoginButton = styled(Button)`
-  background-color: ${Colors.Yellow[100]};
+  width:10em;
+`
+
+const DisconnectButton = styled(Button)`
+  width: 60px;
+  font-size: 11px;
+
 `
 
 const AccountLabel = styled(Button)`
-  height: 32px;
-  margin-right: -40px;
-  padding-right: 40px;
   padding-left: 8px;
-  background-color: ${Colors.Yellow[100]};
-  font-size: 12px;
+  font-size: 11px;
+  margin-right: 0.5em;
 `
