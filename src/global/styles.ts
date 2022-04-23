@@ -14,6 +14,10 @@ export const Colors = {
       100: '#FFF4D4',
     },
     Red: { 400: '#F87171' },
+    Blue: {
+      100: '#1DA1F2',
+      200: '#657786',
+    },
   }
   
   export const Fonts = {

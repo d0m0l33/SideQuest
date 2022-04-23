@@ -7,8 +7,8 @@ export const Button = styled.button`
   grid-column-gap: 8px;
   align-items: center;
   width: fit-content;
-  min-width: 160px;
-  height: 40px;
+  min-width: 60px;
+  height: 30px;
   font-family: ${Fonts.Helvetica};
   font-size: 14px;
   line-height: 24px;
@@ -22,9 +22,10 @@ export const Button = styled.button`
   cursor: pointer;
   transition: ${Transitions.all};
 
-  &:hover,
-  &:focus {
-    background-color: ${Colors.Black[900]};
-    color: ${Colors.Yellow[100]};
+  &:hover{
+    background-color: ${Colors.Blue[100]};
+    color: ${Colors.White};
+    border: 1px solid ${Colors.Blue[100]};
+
   }
 `

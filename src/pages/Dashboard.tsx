@@ -1,65 +1,253 @@
 import { useContractFunction, useEthers } from '@usedapp/core'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
-import { LeaderboardList } from '../components/leaderBoardList/LeaderBoardList';
 import { NFTList } from '../components/nftList/NFTList';
 import { BorderRad, Colors, Shadows } from '../global/styles';
-import { Web3Storage } from 'web3.storage'
+import { Web3Storage, Upload} from 'web3.storage'
 import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
-import { Button } from 'react-bootstrap';
+import { Button, FormControl, InputGroup, Tab, Tabs } from 'react-bootstrap';
 import { Contract } from '@ethersproject/contracts'
 import { ethers } from 'ethers'
-import { Spinner } from 'react-bootstrap'
 import {TypedContract} from '@usedapp/core/dist/esm/src/model/types';
 import { SoulMintFactoryConfig, useSoulMintFactory } from '../customHooks/useSoulMintFactory';
+import {differenceBy} from 'lodash'
+import DataTable from 'react-data-table-component';
+import { generateIpfsLink, makeFileObject, ModifiedNftMetaData, SideQuestNFTMetaData, StandardNftMetaData } from '../utils/nftMetadataHelper';
+import { listUploads } from '../api/fileUploadsApi';
 
+    const columns = [
+        {
+            name: 'Name',
+            selector: (row:any) => row.name,
+            sortable: true,
+        },
+        {
+            name: 'Cid',
+            selector: (row:any) => row.cid,
+        },
+        {
+            name: 'Date',
+            selector: (row:any) => row.created,
+            sortable: true,
+        },
+    ];
+    
 
 export function DashBoardPage() {
-const { chainId, account, library } = useEthers();
-const [selectedFile, setSelectedFile] = useState();
-const [currentIpfsLinks, setCurrentIpfsLinks] = useState<string[]>([]);
-const [isUploading, setIsUploading] = useState<boolean>(false);
-const [contract, setContract] = useState<Contract | null>(null)
-
-const signer = library?.getSigner();
-
-const [userHasMintedFactory, setMintedFactoryState] = useState<boolean>(false)
-
-
-let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory();
-
-
-
-useEffect(() => {
-  ;(async () => {
-    if(!contractConfig){
-        setMintedFactoryState(false);
-    } else {
-        setMintedFactoryState(contractConfig.hasMintedFactory);
-    }
-  })()
-  // account ORR chainID changed
-}, [account,chainId, contractConfig])
+    const { chainId, account, library } = useEthers();
+    const [selectedFile, setSelectedFile] = useState();
+    const [currentIpfsLinks, setCurrentIpfsLinks] = useState<string[]>([]);
+    const [isUploading, setIsUploading] = useState<boolean>(false);
+    const [contract, setContract] = useState<Contract | null>(null)
+    const [pending, setPending] = useState(true);
+    const [allUploads, setUploads] = useState<Upload[]>([]);
+    const [filteredUploads, setFilteredUploads] = useState<Upload[]>([]);
+    const [filterText, setFilterText] = useState('');
+    const [resetPaginationToggle, setResetPaginationToggle] = useState(false);
+    const signer = library?.getSigner();
+    const [userHasMintedFactory, setMintedFactoryState] = useState<boolean>(false)
+    let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory();
     const mintOne = useContractFunction(contractConfig?.contract as TypedContract, 'mintOne', { transactionName: 'Mint' });
     const deploySoulMint = useContractFunction(contractConfig?.factoryContract as TypedContract, 'deployOne', { transactionName: 'CreateProfile' });
+    const [selectedRows, setSelectedRows] = useState([]);
+    const [toggleCleared, setToggleCleared] = useState(false);
+
+    const handleRowSelected = useCallback(state => {
+        setSelectedRows(state.selectedRows);
+    }, []);
+
+
+    const contextActions = useMemo(() => {
+        const handleDelete = () => {
+                
+                if (window.confirm(`Are you sure you want to delete:\r ${selectedRows.map((r:any) => r.name)}?`)) {
+                    // setToggleCleared(!toggleCleared);
+                    // setFilteredItems(differenceBy(filteredItems, selectedRows, 'name'));
+                }
+        };
+
+
+        const handleInitialFactoryMint = async ( 
+            e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+        ) => {
+            e.preventDefault();
+            if(!contractConfig){
+                return;
+            }
+            if(!contractConfig.factoryContract){
+                return;
+            }
+            deploySoulMint.send("SoulMintTest", "SMT", "http://foo.bar/");
+        }
+
+        const handleMint = async () => {
+            if(!signer) {
+                console.error('no account connected.');
+                return;
+            }
+            
+            if (window.confirm(`Are you sure you want to Tokenize:\r ${selectedRows.map((r:Upload) => r.name)}?`)) {
+                const metadataFile = generateIPFSMetaDataFile(selectedRows);
+                if(metadataFile == undefined) {
+                    console.error('error creating metadata file.');
+                    return;
+                }
+                setIsUploading(true);
+                const [cid, deals] = await storeFiles([metadataFile], getDefaultFileName());
+                setIsUploading(false);
+                refreshUploads();
+                setToggleCleared(!toggleCleared);
+                const eventId = Math.random() % 100000;
+                mintOne.send(ethers.utils.parseEther(eventId.toString()),account);
+            }
+        };
+
+        const generateIPFSMetaDataFile = (uploads: Upload[]) => {
+
+            if(!account){
+                return;
+            }
+
+            const uris = uploads.map((upload)=> {
+                return `ipfs://${upload.cid}`
+            })
+            const contributions = uploads.length;
+            const randomId = Math.random() % 100000;
+            const randomName = `SoulShard:${randomId}`;
+            const randomDescription = `SoulShard with ${contributions} contributions.`;
+            const attributes = [
+                  {
+                    "trait_type": "Contributions", 
+                    "value": contributions
+                  }, 
+                  {
+                    "trait_type": "Type", 
+                    "value": "Individual"
+                  }, 
+            ];
+
+            const standardMetadata: StandardNftMetaData =  {
+                name : randomName,
+                description: randomDescription,
+                external_url : 'SideQuestUrl',
+                attributes: attributes,
+            };
+
+            const sideQuestMetadata: SideQuestNFTMetaData = {
+                contentUris: uris,
+                chainId: chainId,
+                signer: account,
+                contract: contractConfig?.contract?.address,
+            }
+
+            const modifiedNftData: ModifiedNftMetaData = {
+                ...standardMetadata,
+                sideQuest: sideQuestMetadata
+            }
+
+            return makeFileObject(modifiedNftData, randomName);
+        }
+
+        return (
+            <div>
+            {contractConfig && userHasMintedFactory == false && 
+            <Button variant="outline-success" style={{ marginRight: '0.5em' }}
+            onClick={handleInitialFactoryMint}
+            >Mint Profile</Button>
+            }
+            <Button variant="primary" key="tokenize" onClick={handleMint} style={{ marginRight: '0.5em' }}
+            disabled={userHasMintedFactory === false}
+            >
+                Tokenize
+            </Button>
+            <Button key="delete" variant="outline-danger" onClick={handleDelete} >
+                Delete
+            </Button>
+            </div>
+            
+        );
+    }, [selectedRows, toggleCleared]);
+
+
+    const subHeaderComponentMemo = useMemo(() => {
+        const handleClear = () => {
+                if (filterText) {
+                    setResetPaginationToggle(!resetPaginationToggle);
+                    setFilterText('');
+                }
+            };
+
+        return (
+            <InputGroup size="sm" className="mb-3" style={{maxWidth: '20em'}}>
+            <FormControl
+            placeholder="search"
+            aria-label="Search"
+            aria-describedby="basic-addon1"
+            onChange={e => setFilterText(e.target.value)}
+            />
+            <Button 
+            variant="outline-secondary" id="button-addon2"
+            onClick={handleClear}
+            >
+                Clear
+            </Button>
+        </InputGroup>    
+        );
+    }, [filterText, resetPaginationToggle]);
+    const [key, setKey] = useState('uploads');
+
+    useEffect(() => {
+        ;(async () => {
+            refreshUploads();
+        })()
+    }, [account])
+
+
+
+
+    useEffect(() => {
+        ;(async () => {
+            updateFilteredItems();
+        })()
+    }, [filterText])
+
+
+    useEffect(() => {
+        ;(async () => {
+            if(!contractConfig){
+                setMintedFactoryState(false);
+            } else {
+                setMintedFactoryState(contractConfig.hasMintedFactory);
+            }
+        })()
+    // account ORR chainID changed
+    }, [account,chainId, contractConfig])
+
+
+    const updateFilteredItems = ()=> {
+        const filtered = allUploads ? allUploads.filter(
+            (item: any) => item.name && item.name.toLowerCase().includes(filterText.toLowerCase()),
+        ) : [];
+        setFilteredUploads(filtered);
+    }
+    
+
+    const refreshUploads = async()=> {
+        setToggleCleared(!toggleCleared);
+        setPending(true);
+        const uploads = await listUploads()
+        setUploads(uploads);
+        setFilteredUploads(uploads)
+        setPending(false);
+    }
 
     const changeHandler = (event:any) => {
         setSelectedFile(event.target.files[0]);
     };
 
 
-  const handleInitialFactoryMint = async ( 
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
-    e.preventDefault();
-    if(!contractConfig){
-        return;
-    }
-    if(!contractConfig.factoryContract){
-        return;
-    }
-    deploySoulMint.send("SoulMintTest", "SMT", "http://foo.bar/");
-  }
+
+  
 
   const handleUpload = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -71,38 +259,29 @@ useEffect(() => {
         return;
     }
     setIsUploading(true);
+    await storeFiles(fileInput.files, fileInput.files[0].name);
+    setIsUploading(false);
+    refreshUploads();
+  };
+
+  const getDefaultFileName = (): string => {
+      return `SoulShard-${Math.floor(Math.random() * 10000000)}`
+  }
+
+
+  const storeFiles = async(files: File[], fileName: string): Promise<any[]>=> {
     // Construct with token and endpoint
     const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
-    
-
     // Pack files into a CAR and send to web3.storage
-    const rootCid = await client.put(fileInput.files) // Promise<CIDString>
-
+    const cid = await client.put(files, {
+        name: fileName
+    });
     // Get info on the Filecoin deals that the CID is stored in
-    const info = await client.status(rootCid) // Promise<Status | undefined>
+    const info = await client.status(cid);
+    return [cid,info];
+  }
 
-    // Fetch and verify files from web3.storage
-    const res = await client.get(rootCid) // Promise<Web3Response | null>
 
-    if(!res){
-        console.error('Error fetching and verifying files stored in web3.storage.');
-        setIsUploading(false);
-        return;
-    }
-    const files = await res.files() // Promise<Web3File[]>
-    const links: string[] = [];
-    for (const file of files) {
-        // can then pass the cid to an nft contract
-        // console.log(`${file.cid} ${file.name} ${file.size}`);
-        if(file.cid && file.name){
-            const link = generateIpfsLink(file.cid, file.name);
-            links.push(link);
-        }
-    }
-
-    setCurrentIpfsLinks(links);
-    setIsUploading(false);
-  };
 
   const handleMint = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -111,49 +290,70 @@ useEffect(() => {
     if(!signer){
         return;
     }
-     const eventId = Math.random() % 100000;
+     const eventId = Math.random() * 10000000;
      mintOne.send(ethers.utils.parseEther(eventId.toString()),account);
     };
-
-  const generateIpfsLink =(cid: string, filename: string): string => {
-    return`https://ipfs.io/ipfs/${cid}`;
-  }
 
   return (
     <div>
         { account ? (<DashboardContainer>
-    <Section>
-        <UploadSection>
-        <UploadActionInput type="file" name="file" onChange={changeHandler} />
-        <div>
-            {contractConfig && userHasMintedFactory == false && <UploadActionButton onClick={handleInitialFactoryMint}>Mint Profile</UploadActionButton>}
-            <UploadActionButton disabled={userHasMintedFactory === false} onClick={handleUpload}>upload</UploadActionButton>
+        <Tabs
+            id="controlled-tab-example"
+            activeKey={key}
+            onSelect={(k: any) => setKey(k)}
+            className="mb-3"
+            >    
+            <Tab eventKey="uploads" title="Uploads">
+                <div style={{display: 'flex'}}>
+                <InputGroup size="sm" className="mb-3" style={{maxWidth: '20em'}}>
+                    <FormControl
+                    aria-label="upload"
+                    aria-describedby="basic-addon1"
+                    type="file" 
+                    name="file"
+                    onChange={changeHandler}
+                    />
+                    <Button 
+                variant="outline-primary" id="button-addon2"
+                    onClick={handleUpload}
+                    >
+                    Upload
+                    </Button>
+                </InputGroup>
+                {isUploading && <Text style={{marginLeft: '0.5em', marginTop: '0.4em', color: 'green'}}>Uploading...</Text>} 
+                </div>
+            
+                <DataTable
+                title="Files/Links"
+                subHeaderComponent={subHeaderComponentMemo}
+                subHeader
+                progressComponent={<Text>Loading...</Text>}
+                progressPending={pending}
+                columns={columns}
+                data={filteredUploads}
+                contextActions={contextActions}
+                onSelectedRowsChange={handleRowSelected}
+                fixedHeaderScrollHeight="300px"
+                highlightOnHover
+                pagination
+                responsive
+                selectableRows
+                selectableRowsHighlight
+                striped
+                subHeaderWrap
+                clearSelectedRows={toggleCleared}
+                expandableRows
+                expandOnRowClicked
+                expandableRowsComponent={ExpandedComponent}
 
-        </div>
-        </UploadSection>
-        {isUploading &&  <Spinner animation="grow" /> }
-        {(currentIpfsLinks && currentIpfsLinks.length > 0) && <UrlLinkSection>
-            <UrlLink>
-            <Text>
-            <a 
-            href={currentIpfsLinks[0]} target="_blank" rel="noopener noreferrer">
-            View file             
-            </a>
-                
-            </Text>
-            </UrlLink>
-            <UploadActionButton onClick={handleMint}>mint</UploadActionButton>
-
-        </UrlLinkSection>}
-     </Section>
-    <Section>
-        <BoardPrimary>
-            <NFTBoard></NFTBoard>
-        </BoardPrimary>
-        <BoardSecondary>
-            <LeaderBoard/>
-        </BoardSecondary>
-    </Section>
+                />  
+            </Tab>
+            <Tab eventKey="tokens" title="Tokens">
+            <BoardPrimary>
+                <NFTBoard></NFTBoard>
+            </BoardPrimary>        
+            </Tab>
+        </Tabs>
     </DashboardContainer>) : 
     (<DashboardContainer>
 
@@ -166,17 +366,6 @@ useEffect(() => {
   )
 }
 
-const LeaderBoard = ()=> {
-    return (
-        <div>
-            <div style={{margin:'0.5em', color:'white'}}>
-            <Text>Leader Board</Text>
-            </div>
-            <LeaderboardList/>
-        </div>
-    )
-}
-
 const NFTBoard = ()=> {
     return (
         <div>
@@ -185,9 +374,21 @@ const NFTBoard = ()=> {
     )
 }
 
+
+// data provides access to your row data
+const ExpandedComponent = ({data}: any) => 
+<div style={{display: 'flex'}}>
+    <a href={generateIpfsLink(data.cid)} target="_blank" rel="noopener noreferrer">
+        <Text style={{marginLeft: '5em', marginTop: '1em'}}>{generateIpfsLink(data.cid)}</Text>
+    </a>
+</div>;
+
 const DashboardContainer = styled.div `
   display: flex;
-  margin: 1em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-right: 5em;
+  margin-left: 5em;
   column-gap: 10px;
   row-gap: 10px;
   flex-direction:column;
@@ -266,3 +467,13 @@ export const UploadActionInput = styled.input`
 `
 
 
+//  const LeaderBoard = ()=> {
+//     return (
+//         <div>
+//             <div style={{margin:'0.5em', color:'white'}}>
+//             <Text>Leader Board</Text>
+//             </div>
+//             <LeaderboardList/>
+//         </div>
+//     )
+// }
