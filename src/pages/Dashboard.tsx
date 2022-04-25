@@ -51,6 +51,8 @@ export function DashBoardPage() {
     const deploySoulMint = useContractFunction(contractConfig?.factoryContract as TypedContract, 'deployOne', { transactionName: 'CreateProfile' });
     const [selectedRows, setSelectedRows] = useState([]);
     const [toggleCleared, setToggleCleared] = useState(false);
+    const [key, setKey] = useState('home');
+
 
     const handleRowSelected = useCallback(state => {
         setSelectedRows(state.selectedRows);
@@ -194,7 +196,6 @@ export function DashBoardPage() {
         </InputGroup>    
         );
     }, [filterText, resetPaginationToggle]);
-    const [key, setKey] = useState('uploads');
 
     useEffect(() => {
         ;(async () => {
@@ -303,6 +304,38 @@ export function DashBoardPage() {
             onSelect={(k: any) => setKey(k)}
             className="mb-3"
             >    
+            <Tab eventKey="home" title="Home">
+                <Board>
+                    {/* <div style={{flexGrow: '2'}}>
+                        <div style={{margin: '0.5em', height: '50%', backgroundColor: Colors.Blue[200], borderRadius: '.25rem'}}></div>
+                    </div>                     */}
+                    <div style={{
+                        flexGrow: '1', 
+                        border:'solid', 
+                        borderWidth: '0.5px', 
+                        borderTop: 'none',
+                        borderBottom: 'none',
+                        borderColor: Colors.Gray[300]
+                        }}>
+                        <NFTBoard></NFTBoard>
+                    </div>
+                    <div style={{display:'flex', flexDirection:'column', flexGrow: '3'}}>
+                        <div style={{margin: '0.5em', height: '50%', backgroundColor:' #cee4f6', borderRadius: '.25rem'}}>
+                                
+                            <Text style={{margin: '1em'}}>
+                                Favourites
+                            </Text>
+                        </div>
+                        <div style={{margin: '0.5em', height: '50%', backgroundColor: '#cee4f6', borderRadius: '.25rem'}}>
+                                
+                                <Text style={{margin: '1em'}}>
+                                    Active Quests
+                                </Text>
+                        </div>
+                    </div>
+                </Board>  
+                      
+            </Tab>
             <Tab eventKey="uploads" title="Uploads">
                 <div style={{display: 'flex'}}>
                 <InputGroup size="sm" className="mb-3" style={{maxWidth: '20em'}}>
@@ -347,11 +380,6 @@ export function DashBoardPage() {
                 expandableRowsComponent={ExpandedComponent}
 
                 />  
-            </Tab>
-            <Tab eventKey="tokens" title="Tokens">
-            <BoardPrimary>
-                <NFTBoard></NFTBoard>
-            </BoardPrimary>        
             </Tab>
         </Tabs>
     </DashboardContainer>) : 
@@ -406,8 +434,15 @@ export const Section = styled.div`
 export const SubSection = styled.div`
     display:flex;
     margin-right:0.5em;
-
 `
+
+export const Board = styled(SubSection)`
+    display:flex;
+    box-shadow: ${Shadows.main};
+    background-color: aliceblue;
+    height: 600px;
+`
+
 export const BoardPrimary = styled(SubSection)`
     display:flex;
     flex-grow: 2;
