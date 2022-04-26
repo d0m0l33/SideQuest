@@ -11,11 +11,18 @@ import { useSoulMintFactory, SoulMintFactoryConfig } from '../../customHooks/use
 import { Button } from '../base/Button'
 import { BsFillHandThumbsUpFill, BsStar } from "react-icons/bs";
 import { BiShare } from "react-icons/bi";
+import { useEffect } from 'react'
 
 
 export function NFTList() {
   let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory();
   let nfts: any[]| undefined| null = useSoulMintNfts(contractConfig?.contract);
+
+  useEffect(() => {
+    ;(async () => {
+        console.log('nfts : ',nfts)
+    })()
+}, [nfts])
   return (
     <div>
 
@@ -38,7 +45,7 @@ const NftContent = ({ nfts }: { nfts: any[]; })=>{
     { nfts && nfts.length === 0 && <div>No contributions at the moment.<br></br>Upload content and tokenize your contributions!</div>}
     {nfts.map((nft: any, idx:number) => {
       return (  
-        <TokenCard>
+        <TokenCard key={`token-${idx}`}>
         <TokenCardContents>
           <div style={{display:'flex'}}>
               <Figure style={{marginRight:'1em'}}>
@@ -50,7 +57,7 @@ const NftContent = ({ nfts }: { nfts: any[]; })=>{
                 />
               </Figure>
               <div style={{display:'flex', flexDirection: 'column'}}>
-                <h3>Notes for Quest Dao</h3>
+                <b><p style={{fontSize:'15px' }}>{nft.name}</p></b>
                 <div style={{fontSize: '12px'}}>4/23/2022, 5:36:58 PM</div>
                 <div style={{display: 'flex', flexDirection: 'column'}}>
                     <div>

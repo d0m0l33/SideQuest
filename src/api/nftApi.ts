@@ -25,3 +25,28 @@ export const getTokenIdsFor = async (contractAddress: string|null|undefined, cha
       return null;
     });
  }
+
+ export const getMetadataFor = async (
+   contractAddress: string|null|undefined,
+   tokenId: number, 
+   chainId:  number|null|undefined): Promise<AxiosResponse|null>=> {
+  if(!contractAddress || contractAddress === undefined){
+      return null;
+  }
+
+  const metadataForTokenID = 
+  `https://api.covalenthq.com/v1/${chainId}/tokens/${contractAddress}/nft_metadata/${tokenId}/?key=${COVALENT_KEY}`
+
+  return axios.get(metadataForTokenID)
+    .then(function (response) {
+      // handle success
+      return response
+    })
+    .catch(function (error) {
+      // handle error
+      console.log(error);
+
+      return null;
+    });
+ }
+ 

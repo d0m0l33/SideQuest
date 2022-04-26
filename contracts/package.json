@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "hardhat test"
+    "deploy-testnet": "npx hardhat run --network mumbai scripts/deploy.js",
+    "test": "hardhat test",
+    "node": "npx hardhat node --watch"
   },
   "keywords": [],
   "author": "",

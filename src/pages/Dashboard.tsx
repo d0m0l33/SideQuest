@@ -1,4 +1,4 @@
-import { useContractFunction, useEthers } from '@usedapp/core'
+import { useContractFunction, useEthers, useNotifications } from '@usedapp/core'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
 import { NFTList } from '../components/nftList/NFTList';
@@ -35,6 +35,8 @@ import { listUploads } from '../api/fileUploadsApi';
 
 export function DashBoardPage() {
     const { chainId, account, library } = useEthers();
+    const { notifications } = useNotifications()
+
     const [selectedFile, setSelectedFile] = useState();
     const [currentIpfsLinks, setCurrentIpfsLinks] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -79,7 +81,7 @@ export function DashBoardPage() {
             if(!contractConfig.factoryContract){
                 return;
             }
-            deploySoulMint.send("SoulMintTest", "SMT", "http://foo.bar/");
+            deploySoulMint.send();
         }
 
         const handleMint = async () => {
@@ -99,8 +101,8 @@ export function DashBoardPage() {
                 setIsUploading(false);
                 refreshUploads();
                 setToggleCleared(!toggleCleared);
-                const eventId = Math.random() % 100000;
-                mintOne.send(ethers.utils.parseEther(eventId.toString()),account);
+                console.log('cid : ',cid)
+                mintOne.send(cid);
             }
         };
 
@@ -114,7 +116,7 @@ export function DashBoardPage() {
                 return `ipfs://${upload.cid}`
             })
             const contributions = uploads.length;
-            const randomId = Math.random() % 100000;
+            const randomId = Math.floor(Math.random() * 10000000);
             const randomName = `SoulShard:${randomId}`;
             const randomDescription = `SoulShard with ${contributions} contributions.`;
             const attributes = [
@@ -222,7 +224,7 @@ export function DashBoardPage() {
             }
         })()
     // account ORR chainID changed
-    }, [account,chainId, contractConfig])
+    }, [account,chainId, contractConfig, notifications])
 
 
     const updateFilteredItems = ()=> {
@@ -275,25 +277,13 @@ export function DashBoardPage() {
     const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
     // Pack files into a CAR and send to web3.storage
     const cid = await client.put(files, {
-        name: fileName
+        name: fileName,
+        wrapWithDirectory: false
     });
     // Get info on the Filecoin deals that the CID is stored in
     const info = await client.status(cid);
     return [cid,info];
   }
-
-
-
-  const handleMint = async (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
-    e.preventDefault();
-    if(!signer){
-        return;
-    }
-     const eventId = Math.random() * 10000000;
-     mintOne.send(ethers.utils.parseEther(eventId.toString()),account);
-    };
 
   return (
     <div>

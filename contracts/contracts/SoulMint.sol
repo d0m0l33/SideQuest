@@ -1,45 +1,38 @@
-pragma solidity ^0.5.0;
 
-import "./XPoap.sol";
-import "./Ownable.sol";
+//SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.0;
 
-contract SoulMint is Ownable {
-  XPoap public xpoap;
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; 
+
+contract SoulMint is ERC721URIStorage, Ownable {
+  using Counters for Counters.Counter;
+  Counters.Counter private _tokenIds;
   mapping(uint256 => uint256) public mintTimestampByTokenId;
+  string private _baseTokenURI;
 
-  constructor(string memory __name, string memory __symbol, string memory __baseURI) public {
-    address _txOrigin = tx.origin;
-    address[] memory admins = new address[](1);
-    admins[0] = _txOrigin;
 
-    xpoap = new XPoap();
-    // TODO: In the real-world POAP contract, this is called initialize.
-    // Find out why we're getting some error and revert it to initialize, this won't be compatible with the deployed contract
-    xpoap.init(__name, __symbol, __baseURI, admins); // TODO: This is currently tied to one admin. Maybe make it a factory so that each admin deploys theirs?
+  constructor(address owner, string memory __name, string memory __symbol, string memory __baseURI)
+  ERC721(__name, __symbol) 
+   public {
+    _baseTokenURI = __baseURI;
+    _transferOwnership(owner);
   }
 
-  function getXpoapAddress() public view returns (XPoap xpoapAddress) {
-    return xpoap;
+  function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
   }
 
-  function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
-    return xpoap.tokenOfOwnerByIndex(owner, index);
+  function mintOne(string memory metadataURI) public onlyOwner returns (uint256)
+  {
+    _tokenIds.increment();
+    uint256 id = _tokenIds.current();
+    _safeMint(msg.sender, id);
+    _setTokenURI(id, metadataURI);
+    mintTimestampByTokenId[id] = block.timestamp;
+    return id;
   }
 
-  function mintOne(uint256 eventId, address to) public {
-    xpoap.mintToken(eventId, to);
-    mintTimestampByTokenId[xpoap.tokenOfOwnerByIndex(to, xpoap.balanceOf(to) -1)] = block.timestamp;
-  }
-
-  function balanceOf(address _owner) public view returns (uint256) {
-    return xpoap.balanceOf(_owner);
-  }
-
-  function setBaseURI(string memory baseURI) public {
-    xpoap.setBaseURI(baseURI);
-  }
-
-  function tokenURI(uint256 tokenId) external view returns (string memory) {
-    return xpoap.tokenURI(tokenId);
-  }
 }

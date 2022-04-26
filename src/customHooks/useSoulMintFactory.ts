@@ -12,7 +12,8 @@ export interface SoulMintFactoryConfig {
   factoryContract: Contract|null;
   hasMintedFactory: boolean;
 }
-export const SOUL_MINT_FACTORY_ADDRESS = "0x756743910ceA0998F23D57181b9d3512450CadF4"
+export const SOUL_MINT_FACTORY_ADDRESS = "0x32c2B3F606B2aF7EA945BBaC1D183d2960B201Cf"
+export const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 
 export function useSoulMintFactory() {
 
@@ -29,7 +30,7 @@ export function useSoulMintFactory() {
     } else {
         const factoryContract = new ethers.Contract(SOUL_MINT_FACTORY_ADDRESS, soulMintFactory.abi, signer);
         factoryContract.contractByOwner(account).then(async (soulMintContractAddress: string) => {
-            if (soulMintContractAddress === '0x0000000000000000000000000000000000000000') {
+            if (soulMintContractAddress === ADDRESS_ZERO) {
               setConfig({contract : null, hasMintedFactory: false, factoryContract: factoryContract});
             } else {
               const fetched = new ethers.Contract(soulMintContractAddress, soulMint.abi, library)

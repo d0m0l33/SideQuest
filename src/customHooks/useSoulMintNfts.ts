@@ -1,56 +1,51 @@
 import  { AxiosResponse } from 'axios'
 import { useEffect, useState } from 'react'
 import { ChainId, useEthers, useNotifications } from '@usedapp/core'
-import { getTokenIdsFor } from '../api/nftApi';
+import { getMetadataFor, getTokenIdsFor } from '../api/nftApi';
 import { Contract } from '@ethersproject/contracts'
 import BigNumber from 'bignumber.js';
-
-
+import { Web3Storage } from 'web3.storage';
+import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
 
 export function useSoulMintNfts(contract:Contract|null|undefined, overrideChainId?: ChainId, tags?: string[]) {
 
-  const { account, chainId, library } = useEthers();
+  const { account, chainId } = useEthers();
   const { notifications } = useNotifications()
 
   const adjustedChainId = chainId === 31337 ? ChainId.Mainnet : chainId;
-  // soul mint contract calls external xpoap address
-  // so logs that will be indexed in the future are assosciated with this contract address
   const [nfts, setNfts] = useState<any[]>()
   useEffect(() => {
-    if(!contract){
+    if(!contract || !chainId){
       setNfts(undefined);
     } else {
-      contract.getXpoapAddress() .then(async (xpoapAddress: string) => {
-        getTokenIdsFor(xpoapAddress, adjustedChainId)
+        getTokenIdsFor(contract.address, adjustedChainId)
         .then(async (response) => {
           if (response) {
               const nftItems = parseResponseForItems(response);
-              if(nftItems) {
-                // hardcoding contribution token data for now
-                setNfts(nftItems.map((nft: any) => ({
-                  id: nft.token_id,
-                  index: new BigNumber(nft.token_id).plus(50).toString(),
-                  name: 'Quest DAO',
-                  type : 'Dao Contribution',
-                })));
-  
+              if(!nftItems) {
+                setNfts(undefined);
               } else {
-          
-                  setNfts(undefined);
+                let sideQuestNfts:any[] = [];
+                const resolvedPromises = nftItems?.map(async (nftItem)=> {
+                  const tokenId = nftItem.token_id;
+                  const response = await getMetadataFor(contract.address,tokenId,chainId);
+                  const metadata = response ? parseResponseForItems(response) : null;
+                  const sideQuestNft = createSideQuestNFT(tokenId,metadata);
+                  return sideQuestNft;
+                })
+                sideQuestNfts = await Promise.all(resolvedPromises);
+                setNfts(sideQuestNfts);
               }
           } else {
             const errorMessage = 'Couldnt fetch transaction data';
-            return Promise.reject(new Error(errorMessage))
+            setNfts(undefined);
+            console.error(errorMessage);
           }
         })
         .catch((err) => {
           console.log(err)
           setNfts(undefined)
         })
-      }).catch((err: any) => {
-        console.log(err)
-        setNfts(undefined)
-      })
     }
   }, [account,chainId, contract, notifications])
   return nfts
@@ -62,4 +57,50 @@ export const parseResponseForItems =(response: AxiosResponse): (any[]|null) => {
       return null;
     }
     return response.data.data.items;
+}
+
+
+export const extractIPFSDataFrom = (convalentList: any[]) => {
+  if(convalentList == null || convalentList[0].nft_data == null ||  convalentList[0].nft_data[0] == null) {
+    return null;
+  }
+  const nftData = convalentList[0].nft_data[0];
+  return nftData ? nftData.external_data : null;
+}
+
+export const createSideQuestNFT = (tokenId: number, metadata: any) => {
+  
+ const ipfsData = extractIPFSDataFrom(metadata);
+ const description = ipfsData? ipfsData?.description : null;
+ const name =  ipfsData ? ipfsData?.name : 'Personal Log';
+ const attributes = ipfsData ? ipfsData?.attributes : [];
+ return  {
+    id: tokenId,
+    name: name,
+    description: description,
+    attributes : attributes,
+    date: null,
+    index: new BigNumber(tokenId).plus(50).toString(),
+    type : null,
+  }
+}
+
+export async function retrieveFiles (cid: string) {
+  const data = [];
+  const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
+  const res = await client.get(cid);
+  if(!res) {
+    return null;
+  }
+  if (!res.ok) {
+    return null;
+  }
+
+  // unpack File objects from the response
+  const files = await res.files()
+  for (const file of files) {
+    console.log(`${file.cid} -- ${file.name} -- ${file.size}`)
+    data.push(file)
+  }
+  return data
 }
