@@ -1,10 +1,9 @@
-import { useContractFunction, useEthers } from '@usedapp/core'
+import { useContractFunction, useEthers, useNotifications } from '@usedapp/core'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
 import { NFTList } from '../components/nftList/NFTList';
 import { BorderRad, Colors, Shadows } from '../global/styles';
 import { Web3Storage, Upload} from 'web3.storage'
-import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
 import { Button, FormControl, InputGroup, Tab, Tabs } from 'react-bootstrap';
 import { Contract } from '@ethersproject/contracts'
 import { ethers } from 'ethers'
@@ -14,6 +13,7 @@ import {differenceBy} from 'lodash'
 import DataTable from 'react-data-table-component';
 import { generateIpfsLink, makeFileObject, ModifiedNftMetaData, SideQuestNFTMetaData, StandardNftMetaData } from '../utils/nftMetadataHelper';
 import { listUploads } from '../api/fileUploadsApi';
+import { Web3StorageClient } from '../utils/web3StorageClient';
 
     const columns = [
         {
@@ -35,6 +35,8 @@ import { listUploads } from '../api/fileUploadsApi';
 
 export function DashBoardPage() {
     const { chainId, account, library } = useEthers();
+    const { notifications } = useNotifications()
+
     const [selectedFile, setSelectedFile] = useState();
     const [currentIpfsLinks, setCurrentIpfsLinks] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -51,6 +53,8 @@ export function DashBoardPage() {
     const deploySoulMint = useContractFunction(contractConfig?.factoryContract as TypedContract, 'deployOne', { transactionName: 'CreateProfile' });
     const [selectedRows, setSelectedRows] = useState([]);
     const [toggleCleared, setToggleCleared] = useState(false);
+    const [key, setKey] = useState('home');
+
 
     const handleRowSelected = useCallback(state => {
         setSelectedRows(state.selectedRows);
@@ -77,7 +81,7 @@ export function DashBoardPage() {
             if(!contractConfig.factoryContract){
                 return;
             }
-            deploySoulMint.send("SoulMintTest", "SMT", "http://foo.bar/");
+            deploySoulMint.send();
         }
 
         const handleMint = async () => {
@@ -97,8 +101,8 @@ export function DashBoardPage() {
                 setIsUploading(false);
                 refreshUploads();
                 setToggleCleared(!toggleCleared);
-                const eventId = Math.random() % 100000;
-                mintOne.send(ethers.utils.parseEther(eventId.toString()),account);
+                console.log('cid : ',cid)
+                mintOne.send(cid);
             }
         };
 
@@ -112,7 +116,7 @@ export function DashBoardPage() {
                 return `ipfs://${upload.cid}`
             })
             const contributions = uploads.length;
-            const randomId = Math.random() % 100000;
+            const randomId = Math.floor(Math.random() * 10000000);
             const randomName = `SoulShard:${randomId}`;
             const randomDescription = `SoulShard with ${contributions} contributions.`;
             const attributes = [
@@ -194,7 +198,6 @@ export function DashBoardPage() {
         </InputGroup>    
         );
     }, [filterText, resetPaginationToggle]);
-    const [key, setKey] = useState('uploads');
 
     useEffect(() => {
         ;(async () => {
@@ -221,7 +224,7 @@ export function DashBoardPage() {
             }
         })()
     // account ORR chainID changed
-    }, [account,chainId, contractConfig])
+    }, [account,chainId, contractConfig, notifications])
 
 
     const updateFilteredItems = ()=> {
@@ -271,28 +274,19 @@ export function DashBoardPage() {
 
   const storeFiles = async(files: File[], fileName: string): Promise<any[]>=> {
     // Construct with token and endpoint
-    const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
-    // Pack files into a CAR and send to web3.storage
+    const client = await Web3StorageClient.getClient();
+    if(!client){
+        console.error('error crearing ')
+        return [];
+    }      // Pack files into a CAR and send to web3.storage
     const cid = await client.put(files, {
-        name: fileName
+        name: fileName,
+        wrapWithDirectory: false
     });
     // Get info on the Filecoin deals that the CID is stored in
     const info = await client.status(cid);
     return [cid,info];
   }
-
-
-
-  const handleMint = async (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
-    e.preventDefault();
-    if(!signer){
-        return;
-    }
-     const eventId = Math.random() * 10000000;
-     mintOne.send(ethers.utils.parseEther(eventId.toString()),account);
-    };
 
   return (
     <div>
@@ -303,6 +297,38 @@ export function DashBoardPage() {
             onSelect={(k: any) => setKey(k)}
             className="mb-3"
             >    
+            <Tab eventKey="home" title="Home">
+                <Board>
+                    {/* <div style={{flexGrow: '2'}}>
+                        <div style={{margin: '0.5em', height: '50%', backgroundColor: Colors.Blue[200], borderRadius: '.25rem'}}></div>
+                    </div>                     */}
+                    <div style={{
+                        flexGrow: '1', 
+                        border:'solid', 
+                        borderWidth: '0.5px', 
+                        borderTop: 'none',
+                        borderBottom: 'none',
+                        borderColor: Colors.Gray[300]
+                        }}>
+                        <NFTBoard></NFTBoard>
+                    </div>
+                    <div style={{display:'flex', flexDirection:'column', flexGrow: '3'}}>
+                        <div style={{margin: '0.5em', height: '50%', backgroundColor:' #cee4f6', borderRadius: '.25rem'}}>
+                                
+                            <Text style={{margin: '1em'}}>
+                                Favourites
+                            </Text>
+                        </div>
+                        <div style={{margin: '0.5em', height: '50%', backgroundColor: '#cee4f6', borderRadius: '.25rem'}}>
+                                
+                                <Text style={{margin: '1em'}}>
+                                    Active Quests
+                                </Text>
+                        </div>
+                    </div>
+                </Board>  
+                      
+            </Tab>
             <Tab eventKey="uploads" title="Uploads">
                 <div style={{display: 'flex'}}>
                 <InputGroup size="sm" className="mb-3" style={{maxWidth: '20em'}}>
@@ -347,11 +373,6 @@ export function DashBoardPage() {
                 expandableRowsComponent={ExpandedComponent}
 
                 />  
-            </Tab>
-            <Tab eventKey="tokens" title="Tokens">
-            <BoardPrimary>
-                <NFTBoard></NFTBoard>
-            </BoardPrimary>        
             </Tab>
         </Tabs>
     </DashboardContainer>) : 
@@ -406,8 +427,15 @@ export const Section = styled.div`
 export const SubSection = styled.div`
     display:flex;
     margin-right:0.5em;
-
 `
+
+export const Board = styled(SubSection)`
+    display:flex;
+    box-shadow: ${Shadows.main};
+    background-color: aliceblue;
+    height: 600px;
+`
+
 export const BoardPrimary = styled(SubSection)`
     display:flex;
     flex-grow: 2;

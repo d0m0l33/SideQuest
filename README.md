@@ -1,5 +1,10 @@
 # SideQuest
 Gamified Coordination
+### Intro
+Gamified Coordination     ..accomplished through..
+   - Tokenized Contributions
+   - Tokenized Collaboration
+   - Gaming Project Management UI
 
 ###  Setup : 
 - clone repo
@@ -7,12 +12,4 @@ Gamified Coordination
 - run : npm run start
 
 ### Before running : 
-- go to ./global/apiKeys.ts and update keys for
-`ETH_MAINNET_KEY`. 
-  mainnet : https://www.alchemy.com/ )
-
-### Intro
-Gamified Coordination     ..accomplished through..
-   - Tokenized Contributions
-   - Tokenized Collaboration
-   - Gaming Project Management UI
+- create a .env file in the root directory, and add keys needed in ./src/apiKeys.ts.

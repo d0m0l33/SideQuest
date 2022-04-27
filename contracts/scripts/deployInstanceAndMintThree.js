@@ -9,7 +9,7 @@ async function main() {
   await soulMintFactory.deployed();
   console.log("SoulMintFactory deployed to:", soulMintFactory.address);
 
-  const deployedOne = await soulMintFactory.deployOne("Test", "TST", "http://foo.bar/");
+  const deployedOne = await soulMintFactory.deployOne();
   await deployedOne.wait();
   const soulMintAddress = await soulMintFactory.contractByOwner(deployer.address);
 
@@ -18,9 +18,25 @@ async function main() {
 
   const soulMint = await hre.ethers.getContractAt("SoulMint", soulMintAddress);
   console.log("Minting three...");
-  await soulMint.mintOne(1, '0x22fC1E905CBD424ec1ba9447EF98F9E374Ce16e1');
-  await soulMint.mintOne(2, '0x22fC1E905CBD424ec1ba9447EF98F9E374Ce16e1');
-  await soulMint.mintOne(3, '0x22fC1E905CBD424ec1ba9447EF98F9E374Ce16e1');
+   await soulMint.mintOne('someid123');
+   await soulMint.mintOne('someid1234');
+   await soulMint.mintOne('someid1235');
+
+   const uri1  = await soulMint.tokenURI(1);
+   const tStamp1  = await soulMint.mintTimestampByTokenId(1);
+   const totalSoulMints  = await soulMintFactory.totalSoulMints();
+
+   console.log('uri : ',uri1);
+   console.log('tStamp1 : ',epochToDate(ethers.utils.formatEther(tStamp1)));
+   console.log('totalSoulMints : ',totalSoulMints);
+
+   const deployedAnotherOne = await soulMintFactory.deployOne();
+   await deployedAnotherOne.wait();
+
+}
+
+const epochToDate = (epoch)=> {
+  return new Date( epoch * 1000);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

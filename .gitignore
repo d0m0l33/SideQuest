@@ -24,3 +24,12 @@ yarn-error.log*
 
 .env
 *lock
+
+/src/artifacts/cache
+
+/contracts/cache
+/contracts/node_modules
+/contracts/*lock
+
+
+cache

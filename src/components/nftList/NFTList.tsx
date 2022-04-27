@@ -1,5 +1,5 @@
 import { formatUnits } from '@ethersproject/units'
-import { Spinner } from 'react-bootstrap'
+import { Card, Spinner, Badge, ListGroup, ListGroupItem, Figure } from 'react-bootstrap'
 import styled from 'styled-components'
 import { Colors } from '../../global/styles'
 import { TextBold } from '../../global/typography'
@@ -8,13 +8,21 @@ import { Contract } from '@ethersproject/contracts'
 
 import { useSoulMintNfts } from '../../customHooks/useSoulMintNfts'
 import { useSoulMintFactory, SoulMintFactoryConfig } from '../../customHooks/useSoulMintFactory'
+import { Button } from '../base/Button'
+import { BsFillHandThumbsUpFill, BsStar } from "react-icons/bs";
+import { BiShare } from "react-icons/bi";
+import { useEffect } from 'react'
 
-
-//{contract && !nfts ?  (<Spinner animation="grow" /> ):
 
 export function NFTList() {
   let contractConfig: SoulMintFactoryConfig| null| undefined = useSoulMintFactory();
   let nfts: any[]| undefined| null = useSoulMintNfts(contractConfig?.contract);
+
+  useEffect(() => {
+    ;(async () => {
+        console.log('nfts : ',nfts)
+    })()
+}, [nfts])
   return (
     <div>
 
@@ -36,19 +44,36 @@ const NftContent = ({ nfts }: { nfts: any[]; })=>{
     <>
     { nfts && nfts.length === 0 && <div>No contributions at the moment.<br></br>Upload content and tokenize your contributions!</div>}
     {nfts.map((nft: any, idx:number) => {
-      return (
-            <NFTItem key={`SubSection-${idx}`}> 
-            <NFTIconContainer>
-              <NFTDomainName>
-                Quest Dao
-              </NFTDomainName>
-              <NFTSVGIcon src={''} alt={''}></NFTSVGIcon>
-              <NFTContributionPoints> 
-                {formatUnits(10,0)}xp
-              </NFTContributionPoints>
-            </NFTIconContainer>
-                {nft.type && <NFTType>{nft.type}</NFTType>}                    
-          </NFTItem>
+      return (  
+        <TokenCard key={`token-${idx}`}>
+        <TokenCardContents>
+          <div style={{display:'flex'}}>
+              <Figure style={{marginRight:'1em'}}>
+                <Figure.Image
+                  width={171}
+                  height={180}
+                  alt="171x180"
+                    src="mario.jpeg"
+                />
+              </Figure>
+              <div style={{display:'flex', flexDirection: 'column'}}>
+                <b><p style={{fontSize:'15px' }}>{nft.name}</p></b>
+                <div style={{fontSize: '12px'}}>4/23/2022, 5:36:58 PM</div>
+                <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <div>
+                      <Badge style={{marginRight: '0.2em'}}>Individual Log</Badge>
+                      <Badge style={{marginRight: '0.2em'}}>Multi Link</Badge>
+                      <Badge style={{marginRight: '0.2em'}} bg="dark">Fully IPFS Backed</Badge>
+                    </div>
+                    <div>
+                    <BiShare style={{marginRight: '0.2em', fontSize: '20px'}} />
+                    <BsStar style={{marginRight: '0.2em'}} />
+                    </div>
+                </div>
+              </div>
+          </div>
+        </TokenCardContents>
+        </TokenCard>
   )})}
 </>
 
@@ -57,78 +82,30 @@ const NftContent = ({ nfts }: { nfts: any[]; })=>{
 
 const NFTContainer = styled.div`
 display: flex;
-flex-flow: row wrap;
-height: 100%;
+flex-direction: column;
+height: 600px;
+overflow:scroll;
 `
+const TokenCard = styled.div`
+  background-color:  ${Colors.White};
+  border:solid;
+  border-width: 0.5px;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  borderColor:${Colors.Gray[300]};
 
 
-export const Button = styled.button`
-  display: grid;
-  grid-auto-flow: column;
-  grid-column-gap: 8px;
-  align-items: center;
-  width: fit-content;
-  height: 40px;
-  font-size: 14px;
-  line-height: 24px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: ${Colors.Black[900]};
-  border: 1px solid ${Colors.Black[900]};
-  background-color: transparent;
-  cursor: pointer;
-
-  &:hover,
-  &:focus {
-    background-color: ${Colors.Black[900]};
-    color: ${Colors.Yellow[100]};
+  &:hover {
+    color: ${Colors.Blue[200]};
+    border-width: small;
+    background-color: #f8f8ff;
+    border:none;
+    cursor: pointer;
   }
 `
-
-const NFTItem = styled.li`
-  display: flex;
-  flex-direction: column;
-`
-
-const NFTIconContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  width: 120px;
-  height:120px;
-  margin: 0.2em;
-  border: 1px solid #ebebeb;
-  background: rgb(60, 60, 60);
-  background: rgba(149, 149, 149, 0.4);
-  position: relative;
-
-  &:hover,
-  &:focus, 
-  &:active {
-    color: ${Colors.Yellow[100]};
-    border-width: medium;
-    border-color: ${Colors.Yellow[100]};
-  }
-`
-
-const NFTType = styled(TextBold)`
-  margin-left: 4px;
-  font-size: 12px;
-`
-
-const NFTContributionPoints = styled(TextBold)`
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  padding:0.25em;
-  font-size: 12px;
-`
-
-const NFTDomainName = styled(TextBold)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding:0.25em;
-  font-size: 12px;
+const TokenCardContents = styled.div`
+  margin: 1em;
+  display:flex;
 `
 
