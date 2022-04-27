@@ -5,7 +5,7 @@ import { getMetadataFor, getTokenIdsFor } from '../api/nftApi';
 import { Contract } from '@ethersproject/contracts'
 import BigNumber from 'bignumber.js';
 import { Web3Storage } from 'web3.storage';
-import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
+import { Web3StorageClient } from '../utils/web3StorageClient';
 
 export function useSoulMintNfts(contract:Contract|null|undefined, overrideChainId?: ChainId, tags?: string[]) {
 
@@ -87,7 +87,11 @@ export const createSideQuestNFT = (tokenId: number, metadata: any) => {
 
 export async function retrieveFiles (cid: string) {
   const data = [];
-  const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
+  const client = await Web3StorageClient.getClient();
+  if(!client){
+      console.error('error crearing ')
+      return null;
+  }  
   const res = await client.get(cid);
   if(!res) {
     return null;

@@ -4,7 +4,6 @@ import styled from 'styled-components'
 import { NFTList } from '../components/nftList/NFTList';
 import { BorderRad, Colors, Shadows } from '../global/styles';
 import { Web3Storage, Upload} from 'web3.storage'
-import { WEB3_STORAGE_API_KEY } from '../global/apiKeys';
 import { Button, FormControl, InputGroup, Tab, Tabs } from 'react-bootstrap';
 import { Contract } from '@ethersproject/contracts'
 import { ethers } from 'ethers'
@@ -14,6 +13,7 @@ import {differenceBy} from 'lodash'
 import DataTable from 'react-data-table-component';
 import { generateIpfsLink, makeFileObject, ModifiedNftMetaData, SideQuestNFTMetaData, StandardNftMetaData } from '../utils/nftMetadataHelper';
 import { listUploads } from '../api/fileUploadsApi';
+import { Web3StorageClient } from '../utils/web3StorageClient';
 
     const columns = [
         {
@@ -274,8 +274,11 @@ export function DashBoardPage() {
 
   const storeFiles = async(files: File[], fileName: string): Promise<any[]>=> {
     // Construct with token and endpoint
-    const client = new Web3Storage({ token: WEB3_STORAGE_API_KEY })
-    // Pack files into a CAR and send to web3.storage
+    const client = await Web3StorageClient.getClient();
+    if(!client){
+        console.error('error crearing ')
+        return [];
+    }      // Pack files into a CAR and send to web3.storage
     const cid = await client.put(files, {
         name: fileName,
         wrapWithDirectory: false

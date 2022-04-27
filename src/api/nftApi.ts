@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios"
-import { COVALENT_KEY } from "../global/apiKeys";
+import { COVALENT_KEY } from "../apiKeys";
 
 // TODO!  might use antoher API.
 // Covalent apis for NFTS seem limited.
